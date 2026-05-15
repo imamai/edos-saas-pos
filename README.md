@@ -2,6 +2,8 @@
 
 > Enterprise-grade Point of Sale and Inventory Management System built specifically for solar and electrical retail businesses in Kenya, with deep M-Pesa integration and local business workflow support.
 
+**Live:** [edos-saas-pos-ol8t.vercel.app](https://edos-saas-pos-ol8t.vercel.app)
+
 ---
 
 ## Features
@@ -24,12 +26,12 @@
 - Customer selection and walk-in support
 
 ### M-Pesa Integration (Daraja API)
-- STK Push (Lipa na M-Pesa Online)
+- STK Push (Lipa na M-Pesa Online) — **Till number (Buy Goods)** supported
 - Automatic payment confirmation via callback
-- Payment status polling
+- Payment status polling with graceful pending handling
 - Transaction logs in database
 - Sandbox and Production environments
-- Secure credential management
+- Secure credential management (server-only env vars)
 
 ### Inventory Management
 - Product catalog with categories
@@ -134,10 +136,11 @@ pos-system/
 ### 2. M-Pesa Daraja API
 
 1. Register at [developer.safaricom.co.ke](https://developer.safaricom.co.ke)
-2. Create a new app, get **Consumer Key** and **Consumer Secret**
-3. For sandbox, use test credentials from the portal
-4. For production, your Paybill/Till number and Passkey are from Safaricom
-5. Set callback URL: `https://your-domain.vercel.app/api/mpesa/callback`
+2. Create a new app — get **Consumer Key** and **Consumer Secret**
+3. For sandbox: use the test credentials provided on the portal
+4. For production: apply for **Go Live** with your **Till number** (Buy Goods) — Safaricom provides a Passkey after approval
+5. Set `MPESA_CALLBACK_URL` to `https://your-domain.vercel.app/api/mpesa/callback`
+6. For local development, use [ngrok](https://ngrok.com) to expose your callback: `ngrok http 3000`
 
 ### 3. Local Development
 
@@ -157,16 +160,20 @@ Open [http://localhost:3000](http://localhost:3000)
 npx vercel --prod
 ```
 
-Add these environment variables in Vercel dashboard:
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `NEXT_PUBLIC_APP_URL`
-- `MPESA_ENV` = `production`
-- `MPESA_CONSUMER_KEY`
-- `MPESA_CONSUMER_SECRET`
-- `MPESA_SHORTCODE`
-- `MPESA_PASSKEY`
+Add these environment variables in Vercel dashboard (Settings → Environment Variables):
+
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server only) |
+| `NEXT_PUBLIC_APP_URL` | Your Vercel deployment URL |
+| `MPESA_ENV` | `sandbox` or `production` |
+| `MPESA_CONSUMER_KEY` | Daraja app Consumer Key |
+| `MPESA_CONSUMER_SECRET` | Daraja app Consumer Secret |
+| `MPESA_SHORTCODE` | Your Till number |
+| `MPESA_PASSKEY` | Daraja Passkey (from portal) |
+| `MPESA_CALLBACK_URL` | `https://your-domain.vercel.app/api/mpesa/callback` |
 
 ### 5. Create First Admin User
 
@@ -204,4 +211,4 @@ Add these environment variables in Vercel dashboard:
 
 ## License
 
-MIT © EDOS POS System 2024
+MIT © EDOS POS System 2026

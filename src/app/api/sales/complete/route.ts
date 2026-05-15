@@ -63,21 +63,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 5. Update customer balance for credit sales
-    if (saleData.payment_method === "credit" && saleData.customer_id) {
-      const { data: cust } = await supabase
-        .from("customers")
-        .select("outstanding_balance")
-        .eq("id", saleData.customer_id)
-        .single();
-      if (cust) {
-        await supabase
-          .from("customers")
-          .update({ outstanding_balance: (cust.outstanding_balance ?? 0) + saleData.total_amount })
-          .eq("id", saleData.customer_id);
-      }
-    }
-
     return NextResponse.json({ sale });
   } catch (err) {
     console.error("Complete sale error:", err);

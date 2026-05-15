@@ -116,6 +116,18 @@ export async function queryStkStatus(checkoutRequestId: string): Promise<STKQuer
   });
 
   if (!resp.ok) {
+    const errBody = await resp.json().catch(() => ({})) as Record<string, string>;
+    // Daraja returns non-2xx while transaction is still being processed — treat as pending
+    if (errBody.errorCode) {
+      return {
+        ResponseCode: "0",
+        ResponseDescription: "Accepted",
+        MerchantRequestID: "",
+        CheckoutRequestID: checkoutRequestId,
+        ResultCode: "",
+        ResultDesc: errBody.errorMessage ?? "Transaction in progress",
+      };
+    }
     throw new Error(`STK Query failed: ${resp.statusText}`);
   }
 

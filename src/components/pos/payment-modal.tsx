@@ -41,64 +41,70 @@ export default function PaymentModal({
     setProcessing(true);
     setStep("processing");
 
-    const receipt = generateReceiptNumber();
-    const { data: { user } } = await supabase.auth.getUser();
-    const { data: profile } = await supabase.from("profiles").select("branch_id").eq("id", user!.id).single();
+    try {
+      const receipt = generateReceiptNumber();
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase.from("profiles").select("branch_id").eq("id", user!.id).single();
 
-    let branchId = profile?.branch_id as string | null ?? null;
-    if (!branchId) {
-      const { data: branch } = await supabase.from("branches").select("id").eq("is_main", true).single();
-      branchId = branch?.id ?? null;
-    }
+      let branchId = profile?.branch_id as string | null ?? null;
+      if (!branchId) {
+        const { data: branch } = await supabase.from("branches").select("id").eq("is_main", true).single();
+        branchId = branch?.id ?? null;
+      }
 
-    if (!branchId) {
-      toast.error("No branch configured. Contact your administrator.");
+      if (!branchId) {
+        toast.error("No branch configured. Contact your administrator.");
+        setStep("method");
+        setProcessing(false);
+        return;
+      }
+
+      const res = await fetch("/api/sales/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          branchId,
+          saleData: {
+            receipt_number: receipt,
+            customer_id: customer?.id ?? null,
+            status: "completed",
+            subtotal,
+            discount_amount: discountAmount,
+            tax_amount: taxAmount,
+            total_amount: total,
+            paid_amount: pmts.reduce((s, p) => s + p.amount, 0),
+            change_amount: method === "cash" ? change : 0,
+            payment_method: method,
+          },
+          items: items.map((i) => ({
+            product_id: i.product.id,
+            quantity: i.quantity,
+            unit_price: i.unit_price,
+            discount_amount: i.discount_amount,
+            tax_amount: i.tax_amount,
+            total_price: i.total_price,
+          })),
+          payments: pmts,
+        }),
+      });
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        toast.error("Sale failed: " + (json.error ?? "Unknown error"));
+        setStep("method");
+        setProcessing(false);
+        return;
+      }
+
+      setProcessing(false);
+      setStep("done");
+      setTimeout(() => onSuccess(json.sale.id, receipt), 800);
+    } catch {
+      toast.error("Sale failed. Check your connection and try again.");
       setStep("method");
       setProcessing(false);
-      return;
     }
-
-    const res = await fetch("/api/sales/complete", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        branchId,
-        saleData: {
-          receipt_number: receipt,
-          customer_id: customer?.id ?? null,
-          status: "completed",
-          subtotal,
-          discount_amount: discountAmount,
-          tax_amount: taxAmount,
-          total_amount: total,
-          paid_amount: pmts.reduce((s, p) => s + p.amount, 0),
-          change_amount: method === "cash" ? change : 0,
-          payment_method: method,
-        },
-        items: items.map((i) => ({
-          product_id: i.product.id,
-          quantity: i.quantity,
-          unit_price: i.unit_price,
-          discount_amount: i.discount_amount,
-          tax_amount: i.tax_amount,
-          total_price: i.total_price,
-        })),
-        payments: pmts,
-      }),
-    });
-
-    const json = await res.json();
-
-    if (!res.ok) {
-      toast.error("Sale failed: " + (json.error ?? "Unknown error"));
-      setStep("method");
-      setProcessing(false);
-      return;
-    }
-
-    setProcessing(false);
-    setStep("done");
-    setTimeout(() => onSuccess(json.sale.id, receipt), 800);
   }
 
   if (step === "processing") {
